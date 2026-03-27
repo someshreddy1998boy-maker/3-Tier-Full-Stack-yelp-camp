@@ -1,20 +1,36 @@
-# Use Node 18 as parent image
-FROM node:18
+# Stage 1: Build dependencies
+FROM node:18-alpine AS builder
 
-# Change the working directory on the Docker image to /app
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the /app directory
+# Copy dependency files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (including dev for build)
+RUN npm ci
 
-# Copy the rest of project files into this image
+# Copy source code
 COPY . .
+
+# Build the application (if you have a build step, e.g. React/TypeScript)
+RUN npm run build
+
+# Stage 2: Production image
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+# Install only production dependencies
+RUN npm ci --only=production
 
 # Expose application port
 EXPOSE 3000
 
-# Start the application
-CMD npm start
+# Start the app
+CMD ["npm", "start"]
