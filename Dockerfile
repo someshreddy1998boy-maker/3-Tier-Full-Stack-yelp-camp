@@ -1,35 +1,30 @@
-# Stage 1: Build dependencies
+# Stage 1: Builder
 FROM node:18-alpine AS builder
-
-# Set working directory
 WORKDIR /app
+
+# Install build tools for native modules
+RUN apk add --no-cache python3 make g++
 
 # Copy dependency files
 COPY package.json package-lock.json ./
 
-# Install dependencies (including dev for build)
-RUN npm ci 
+# Install dependencies
+RUN npm ci
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build the application (if you have a build step, e.g. React/TypeScript)
-
-# Stage 2: Production image
+# Stage 2: Runner
 FROM node:18-alpine AS runner
-
 WORKDIR /app
 
-# Copy only necessary files from builder
+# Copy only necessary files
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app . .
 
-# Install only production dependencies
-
-
-# Expose application port
+# Expose port
 EXPOSE 3000
 
-# Start the app
+# Start app
 CMD ["npm", "start"]
