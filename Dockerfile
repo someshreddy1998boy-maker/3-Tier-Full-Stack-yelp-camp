@@ -1,30 +1,19 @@
-# Stage 1: Builder
-FROM node:18-alpine AS builder
+FROM node:18
+
+# Change the working directory on the Docker image to /app
 WORKDIR /app
 
-# Install build tools for native modules
-RUN apk add --no-cache python3 make g++
-
-# Copy dependency files
+# Copy package.json and package-lock.json to the /app directory
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
-# Copy source
+# Copy the rest of project files into this image
 COPY . .
 
-# Stage 2: Runner
-FROM node:18-alpine AS runner
-WORKDIR /app
-
-# Copy only necessary files
-COPY --from=builder /app/package.json /app/package-lock.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app . .
-
-# Expose port
+# Expose application port
 EXPOSE 3000
 
-# Start app
-CMD ["npm", "start"]
+# Start the application
+CMD npm start
